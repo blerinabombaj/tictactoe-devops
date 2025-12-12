@@ -20,3 +20,18 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tictactoe-service
+  labels:
+    app: tictactoe
+spec:
+  type: LoadBalancer
+  selector:
+    app: tictactoe
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
