@@ -51,7 +51,6 @@ pipeline {
                 withEnv(["KUBECONFIG=${KUBECONFIG}"]) {
                     sh """
                         /opt/homebrew/bin/kubectl apply -f deployment.yaml
-                        /opt/homebrew/bin/kubectl apply -f service.yaml
                         /opt/homebrew/bin/kubectl rollout status deployment/tictactoe-deployment
                     """
                 }
