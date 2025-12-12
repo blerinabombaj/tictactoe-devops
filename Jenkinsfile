@@ -2,49 +2,62 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = 'dockerhub'
-        KUBECONFIG_CREDENTIALS = 'kubconfig'
+        // Update with your actual Jenkins credentials IDs
+        GIT_CREDENTIALS = 'github-ssh'
+        DOCKERHUB_CREDENTIALS = 'dockerhub'
+        DOCKER_CMD = '/opt/homebrew/bin/docker'
+        IMAGE_NAME = 'digdigdigdig/tictactoe:latest'
+        KUBECONFIG = '/Users/robertlleshi/.kube/config'
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/blerinabombaj/tictactoe-devops.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/blerinabombaj/tictactoe-devops.git',
+                        credentialsId: "${GIT_CREDENTIALS}"
+                    ]]
+                ])
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("digdigdigdig/tictactoe:latest")
-                }
+                sh "${DOCKER_CMD} build -t ${IMAGE_NAME} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", 
-                                                usernameVariable: 'DOCKER_USER', 
-                                                passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_HUB_CREDENTIALS}") {
-                            dockerImage.push('latest')
-                        }
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKERHUB_CREDENTIALS}",
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo $DOCKER_PASS | ${DOCKER_CMD} login -u $DOCKER_USER --password-stdin
+                        ${DOCKER_CMD} push ${IMAGE_NAME}
+                    """
                 }
             }
         }
 
         stage('Deploy to EKS') {
             steps {
-                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS}", variable: 'KUBECONFIG_FILE')]) {
-                    sh '''
-                        export KUBECONFIG=$KUBECONFIG_FILE
+                withEnv(["KUBECONFIG=${KUBECONFIG}"]) {
+                    sh """
                         kubectl apply -f deployment.yaml
-                    '''
+                        kubectl apply -f service.yaml
+                        kubectl rollout status deployment/tictactoe-deployment
+                    """
                 }
             }
         }
+
     }
 
     post {
@@ -52,7 +65,7 @@ pipeline {
             echo "Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed. Check logs for details."
+            echo "Pipeline failed. Check the logs."
         }
     }
 }
