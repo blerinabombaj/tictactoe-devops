@@ -12,11 +12,18 @@ pipeline {
 
     stages {
 
-        stage('Deploy to EKS') {
-    withEnv(["KUBECONFIG=$HOME/.kube/config"]) {
-        sh '/opt/homebrew/bin/kubectl apply -f deployment.yaml'
-    }
-}
+        stage('Checkout Code') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/blerinabombaj/tictactoe-devops.git',
+                        credentialsId: "${GIT_CREDENTIALS}"
+                    ]]
+                ])
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -43,9 +50,9 @@ pipeline {
             steps {
                 withEnv(["KUBECONFIG=${KUBECONFIG}"]) {
                     sh """
-                        kubectl apply -f deployment.yaml
-                        kubectl apply -f service.yaml
-                        kubectl rollout status deployment/tictactoe-deployment
+                        /opt/homebrew/bin/kubectl apply -f deployment.yaml
+                        /opt/homebrew/bin/kubectl apply -f service.yaml
+                        /opt/homebrew/bin/kubectl rollout status deployment/tictactoe-deployment
                     """
                 }
             }
