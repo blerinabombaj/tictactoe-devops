@@ -12,18 +12,11 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/blerinabombaj/tictactoe-devops.git',
-                        credentialsId: "${GIT_CREDENTIALS}"
-                    ]]
-                ])
-            }
-        }
+        stage('Deploy to EKS') {
+    withEnv(["KUBECONFIG=$HOME/.kube/config"]) {
+        sh '/opt/homebrew/bin/kubectl apply -f deployment.yaml'
+    }
+}
 
         stage('Build Docker Image') {
             steps {
