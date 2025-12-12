@@ -5,7 +5,7 @@ pipeline {
         // Update with your actual Jenkins credentials IDs
         GIT_CREDENTIALS = 'github-ssh'
         DOCKERHUB_CREDENTIALS = 'dockerhub'
-        DOCKER_CMD = '/opt/homebrew/bin/docker'
+        DOCKER_CMD = '/usr/local/bin/docker'
         IMAGE_NAME = 'digdigdigdig/tictactoe:latest'
         KUBECONFIG = '/Users/robertlleshi/.kube/config'
     }
